@@ -1,0 +1,157 @@
+# 上游自动同步 + Cloudflare 自动部署
+#
+# ── 设计思路 ──────────────────────────────────────────────────────────
+# 1. 只同步代码，不同步 .github/workflows/
+#    GITHUB_TOKEN 没有 workflow 写权限。上游一旦改动 .github/workflows/ 下的文件，
+#    即使 merge 成功，push 也会被 GitHub 拒绝（refusing to allow a GitHub App to
+#    create or update workflow）。所以本仓库必须始终用自己的一套 workflow。
+#
+# 2. 冲突只发生在 workflow 目录时，自动取本地版本
+#    上游改动 workflow 时，git merge 会直接在 merge 阶段就冲突（add/add 或 content），
+#    走不到后面的还原步骤。因此先检查冲突文件列表：
+#      - 全部落在 .github/workflows/  → 取本地版本，继续合并
+#      - 存在任何其他文件             → 真冲突，中止并报错，交给人处理
+#    这样既不会被上游的 workflow 改动卡住，也不会掩盖真正的代码冲突。
+#
+# 3. 本仓库不保留上游的三个 workflow
+#    - sync_fork.yml     由本文件取代
+#    - docker-image.yml  推 Docker Hub，本仓库没有 DOCKER_USERNAME/PASSWORD，每次同步必失败
+#    - pr_agent.yml / sync_hf.yml  自带 repository / vars 守卫，会自动跳过，无害
+#
+# 4. 部署两条路，任选其一
+#    A) Cloudflare Workers Builds（推荐）
+#       在 CF 控制台把本仓库接到 Worker，push 即自动构建部署，本仓库无需任何 secret。
+#    B) Actions 内直接 wrangler deploy
+#       配 CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID 两个 secret，deploy job 自动启用。
+#
+# 5. SYNC_TOKEN（可选）
+#    仅在希望同步触发的 push 也去跑 test.yml 时才需要
+#    （GitHub 防递归机制会让 GITHUB_TOKEN 触发的 push 不启动其他 workflow）。
+# ─────────────────────────────────────────────────────────────────────
+
+name: Sync upstream
+
+on:
+  schedule:
+    # 每天 00:17 UTC（北京时间 08:17）。避开整点：GitHub 对整点定时任务延迟较明显。
+    - cron: "17 0 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Sync with upstream
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.merge.outputs.changed }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Merge upstream
+        id: merge
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          BASE="$(git rev-parse HEAD)"
+
+          if ! git remote | grep -qx upstream; then
+            git remote add upstream https://github.com/huangxd-/danmu_api.git
+          fi
+          git fetch --no-tags upstream main
+
+          # 上游没有新提交 → 结束
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "已是最新，无需同步。"
+            exit 0
+          fi
+
+          # 合并；冲突时先分类处理
+          if ! git merge --no-ff --no-edit upstream/main; then
+            CONFLICTS="$(git diff --name-only --diff-filter=U || true)"
+            OTHER="$(printf '%s\n' "$CONFLICTS" | grep -v '^\.github/workflows/' | grep -v '^$' || true)"
+            if [ -n "$OTHER" ]; then
+              git merge --abort || true
+              echo "::error title=上游合并冲突::以下文件与上游冲突，需手动处理："
+              printf '%s\n' "$OTHER"
+              echo "本地修复：git fetch upstream && git merge upstream/main"
+              exit 1
+            fi
+            echo "冲突仅发生在 .github/workflows/，取本仓库版本继续。"
+            git checkout "$BASE" -- .github/workflows
+            git add -A .github/workflows
+            git commit --no-edit
+          fi
+
+          # 无论如何，最终都还原本仓库的 workflow 配置（覆盖上游新增/修改的文件）
+          rm -rf .github/workflows
+          git checkout "$BASE" -- .github/workflows
+          git add -A .github/workflows
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: keep local workflow config (skip upstream .github/workflows)"
+          fi
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "同步完成，本次引入的提交："
+          git log --oneline "$BASE"..HEAD
+
+      - name: Push
+        if: steps.merge.outputs.changed == 'true'
+        run: git push origin HEAD:main
+
+  deploy:
+    name: Deploy to Cloudflare
+    needs: sync
+    if: needs.sync.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    env:
+      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_WORKER_NAME: ${{ vars.CF_WORKER_NAME }}
+
+    steps:
+      - name: 未配置 token，跳过
+        if: env.CF_API_TOKEN == ''
+        run: |
+          echo "未配置 CLOUDFLARE_API_TOKEN，跳过 Actions 内直连部署。"
+          echo "若已在 Cloudflare 控制台把本仓库接到 Worker（Workers Builds），"
+          echo "上一步的 push 已经触发构建，无需任何操作。"
+
+      - name: Checkout
+        if: env.CF_API_TOKEN != ''
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node
+        if: env.CF_API_TOKEN != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        if: env.CF_API_TOKEN != ''
+        run: npm install --omit=dev --no-audit --no-fund
+
+      # Worker 名必须与 wrangler.toml 的 name 一致，否则构建失败。
+      # 若你的 Worker 不叫 danmu-api，在仓库 Variables 里加 CF_WORKER_NAME 覆盖。
+      - name: Deploy
+        if: env.CF_API_TOKEN != ''
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ env.CF_API_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT_ID }}
+          command: deploy ${{ vars.CF_WORKER_NAME != '' && format('--name {0}', vars.CF_WORKER_NAME) || '' }}
