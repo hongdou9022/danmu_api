@@ -19,13 +19,14 @@
 #    - pr_agent.yml / sync_hf.yml  自带 repository / vars 守卫，会自动跳过，无害
 #
 # 4. 部署两条路，任选其一
-#    A) Cloudflare Workers Builds（推荐）
-#       在 CF 控制台把本仓库接到 Worker，push 即自动构建部署，本仓库无需任何 secret。
-#    B) Actions 内直接 wrangler deploy
-#       配 CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID 两个 secret，deploy job 自动启用。
+#    A) Actions 内直接 wrangler deploy（当前已启用）
+#       已配 CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID，每同步一次就部署一次。
+#    B) Cloudflare Workers Builds
+#       在 CF 控制台把本仓库接到 Worker，push 即自动构建。
+#       若两条都开，同一次提交会部署两遍（幂等，只是多花时间），可择一关闭。
 #
 # 5. SYNC_TOKEN（可选）
-#    仅在希望同步触发的 push 也去跑 test.yml 时才需要
+#    仅在希望同步触发的 push 额外去跑 test.yml 时才需要
 #    （GitHub 防递归机制会让 GITHUB_TOKEN 触发的 push 不启动其他 workflow）。
 # ─────────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,11 @@ on:
     # 每天 00:17 UTC（北京时间 08:17）。避开整点：GitHub 对整点定时任务延迟较明显。
     - cron: "17 0 * * *"
   workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: "上游无新提交时也重新部署一次（手动验证 token / 强制更新线上版本）"
+        type: boolean
+        default: false
 
 concurrency:
   group: sync-upstream
@@ -50,6 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.merge.outputs.changed }}
+      deploy: ${{ steps.merge.outputs.deploy }}
 
     steps:
       - name: Checkout
@@ -72,10 +79,16 @@ jobs:
           fi
           git fetch --no-tags upstream main
 
-          # 上游没有新提交 → 结束
+          # 上游没有新提交 → 不同步；手动触发且勾了 force_deploy 时仍继续部署
           if git merge-base --is-ancestor upstream/main HEAD; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "已是最新，无需同步。"
+            if [ "${{ inputs.force_deploy }}" = "true" ]; then
+              echo "deploy=true" >> "$GITHUB_OUTPUT"
+              echo "已是最新，无需同步；按 force_deploy 要求继续部署。"
+            else
+              echo "deploy=false" >> "$GITHUB_OUTPUT"
+              echo "已是最新，无需同步。"
+            fi
             exit 0
           fi
 
@@ -105,6 +118,7 @@ jobs:
           fi
 
           echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "deploy=true" >> "$GITHUB_OUTPUT"
           echo "同步完成，本次引入的提交："
           git log --oneline "$BASE"..HEAD
 
@@ -115,7 +129,7 @@ jobs:
   deploy:
     name: Deploy to Cloudflare
     needs: sync
-    if: needs.sync.outputs.changed == 'true'
+    if: needs.sync.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     env:
       CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
