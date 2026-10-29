@@ -1,0 +1,17 @@
+name: probe-token
+on: workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe Vercel token behaviour
+        run: |
+          B=https://danmu-api-zeta-brown.vercel.app
+          echo "== 1. no token (expect 401) =="
+          curl -s -o /dev/null -w "  HTTP %{http_code}\n" --max-time 30 "$B/api/v2/search/anime?keyword=test"
+          echo "== 2. default 87654321 (expect 401) =="
+          curl -s -o /dev/null -w "  HTTP %{http_code}\n" --max-time 30 "$B/87654321/api/v2/search/anime?keyword=test"
+          echo "== 3. hongdou (expect 200) =="
+          curl -s -o body.json -w "  HTTP %{http_code}\n" --max-time 60 "$B/hongdou/api/v2/search/anime?keyword=%E5%AD%90%E5%A4%9C%E5%BD%92"
+          echo "== 4. body =="
+          head -c 300 body.json; echo
