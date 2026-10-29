@@ -169,3 +169,64 @@ jobs:
           apiToken: ${{ env.CF_API_TOKEN }}
           accountId: ${{ env.CF_ACCOUNT_ID }}
           command: deploy ${{ vars.CF_WORKER_NAME != '' && format('--name {0}', vars.CF_WORKER_NAME) || '' }}
+
+
+  # ── Vercel 部署 ────────────────────────────────────────────────────────
+  # 需要三个 secret，三者缺任一都会自动跳过，不影响 Cloudflare 链路：
+  #   VERCEL_TOKEN       Vercel 账号 Settings → Tokens 创建
+  #   VERCEL_ORG_ID      个人账号填用户名；团队填 Team ID（team_xxx）
+  #   VERCEL_PROJECT_ID  项目 Settings → General → Project ID（prj_xxx）
+  #
+  # 与 Cloudflare 的关键区别：Vercel 用 @vercel/node，是完整 Node 运行时，
+  # 不受 Workers 的 V8 isolate 限制，danmu_api 里的 fs 等 Node 专有路径能真正跑起来。
+  #
+  # 不调用 `vercel link`（它依赖交互式选择，CI 里行为不稳定），
+  # 而是直接写 .vercel/project.json，让每次部署的落点完全确定。
+  vercel:
+    name: Deploy to Vercel
+    needs: sync
+    if: needs.sync.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      - name: 未配置凭据，跳过
+        if: env.VERCEL_TOKEN == '' || env.VERCEL_ORG_ID == '' || env.VERCEL_PROJECT_ID == ''
+        run: |
+          echo "未配置 Vercel 凭据，跳过 Vercel 部署。"
+          echo "需要三个 secret：VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID。"
+
+      - name: Checkout
+        if: env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != ''
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node
+        if: env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Vercel CLI
+        if: env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != ''
+        run: npm install --global vercel@latest
+
+      - name: Write project link
+        if: env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != ''
+        run: |
+          mkdir -p .vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
+          cat .vercel/project.json
+
+      - name: Deploy
+        if: env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != ''
+        run: |
+          set -o pipefail
+          URL="$(vercel deploy --prod --yes --token "$VERCEL_TOKEN" | tail -1)"
+          echo "### Vercel 生产地址" >> "$GITHUB_STEP_SUMMARY"
+          echo "$URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "deployed: $URL"
