@@ -10,10 +10,14 @@ import {
 } from '../danmu_api/apis/dandan-api.js';
 import { Anime } from '../danmu_api/models/dandan-model.js';
 import { findUrlById } from '../danmu_api/utils/cache-util.js';
+import { base64ToBytes } from '../danmu_api/utils/codec-util.js';
 import { resolveLocalDanmaku } from './strict-resolver.js';
+import { BoundedLruMap } from './bounded-comment-cache.js';
+import { safeErrorInfo } from './safe-error-info.js';
 
 const API_VERSION = 1;
 const CACHE_SCHEMA = 1;
+const ANDROID_COMMENT_CACHE_ENTRIES = 2;
 const ENGINE_VERSION = globalThis.__OMNI_SCRIPT_VERSION__ || '1.21.8-dev';
 const BASE = 'https://omni.invalid';
 const STATE_KEY = 'omni-danmaku-engine-v1:meta';
@@ -122,6 +126,7 @@ function initialize() {
     DEPLOY_PLATFORM: 'android',
     VOD_REQUEST_TIMEOUT: '10000',
     SEARCH_CACHE_MINUTES: '30',
+    TENCENT_CONCURRENCY: '8',
     AI_API_KEY: '',
     PROXY_URL: '',
     OTHER_SERVER: '',
@@ -133,6 +138,7 @@ function initialize() {
   // public default. Override the resolved config explicitly so unknown video
   // URLs cannot be forwarded to the upstream third-party service.
   globals.otherServer = '';
+  globals.commentCache = new BoundedLruMap(ANDROID_COMMENT_CACHE_ENTRIES);
   globals.redisValid = false;
   globals.localRedisValid = false;
   globals.localCacheValid = false;
@@ -148,7 +154,9 @@ async function serial(operation) {
     try { return await operation(); }
     finally { persistSnapshot(); }
   });
-  operationQueue = run.catch(() => {});
+  // Keep only queue completion state; retaining run's fulfilled value here
+  // would keep a large comments array alive until the next engine call.
+  operationQueue = run.then(() => undefined, () => undefined);
   return run;
 }
 
@@ -307,16 +315,14 @@ function normalizeColor(value) {
   return `#${color.toUpperCase()}`;
 }
 
-function normalizedComments(payload, episodeId, url) {
+function normalizedComments(payload) {
   const input = Array.isArray(payload && payload.comments) ? payload.comments : [];
-  return input.map(item => {
+  return input.slice(0, 20_000).map(item => {
     const p = String(item && item.p || '').split(',');
     const time = Number(item && item.time !== undefined ? item.time : p[0]);
     const rawMode = item && item.mode !== undefined ? item.mode : p[1];
     const rawColor = item && item.color !== undefined ? item.color : p.length >= 8 ? p[3] : p[2];
     return {
-      episodeId: Number(episodeId) || 0,
-      ...(url ? { url: String(url) } : {}),
       time: Number.isFinite(time) ? time : 0,
       text: String(item && (item.text ?? item.m ?? item.content) || ''),
       mode: normalizeMode(rawMode),
@@ -325,18 +331,45 @@ function normalizedComments(payload, episodeId, url) {
   }).filter(item => item.text.length > 0);
 }
 
+async function binaryDiagnostics() {
+  const expectedBytes = [0, 1, 2, 255, 254, 255];
+  const response = new Response(null, { bodyBase64: 'AAEC//7/' });
+  const buffer = await response.arrayBuffer();
+  const view = new Uint8Array(buffer);
+  const bytes = Array.from(view);
+  const base64 = btoa(String.fromCharCode(...view));
+  const roundTrip = Array.from(atob(base64), character => character.charCodeAt(0));
+  const codecLength = base64ToBytes('AAEC//7/').length;
+  return {
+    ok: buffer.byteLength === expectedBytes.length
+      && view.length === expectedBytes.length
+      && bytes.join(',') === expectedBytes.join(',')
+      && roundTrip.join(',') === expectedBytes.join(',')
+      && codecLength === expectedBytes.length,
+    arrayBufferByteLength: buffer.byteLength,
+    uint8ArrayLength: view.length,
+    fixedBytes: bytes,
+    base64RoundTrip: roundTrip,
+    codecBase64Length: codecLength,
+  };
+}
+
 const Engine = {
   async info(input) {
-    return serial(async () => ({
-      success: true,
-      apiVersion: API_VERSION,
-      scriptVersion: ENGINE_VERSION,
-      minAppVersion: '1.0.20261103_0000',
-      cacheSchema: CACHE_SCHEMA,
-      sourceOrder: ['douban', '360', 'renren', 'hanjutv'],
-      capabilities: { search: true, detail: true, strictResolve: true, commentsById: true, commentsByUrl: true },
-      disabled: ['external-danmu-server', 'ai', 'proxy', 'redis', 'local-files', 'custom-source'],
-    }));
+    return serial(async () => {
+      const result = {
+        success: true,
+        apiVersion: API_VERSION,
+        scriptVersion: ENGINE_VERSION,
+        minAppVersion: '1.0.20261103_0000',
+        cacheSchema: CACHE_SCHEMA,
+        sourceOrder: ['douban', '360', 'renren', 'hanjutv'],
+        capabilities: { search: true, detail: true, strictResolve: true, commentsById: true, commentsByUrl: true },
+        disabled: ['external-danmu-server', 'ai', 'proxy', 'redis', 'local-files', 'custom-source'],
+      };
+      if (parseArg(input).diagnostics === true) result.diagnostics = await binaryDiagnostics();
+      return result;
+    });
   },
 
   async search(input) {
@@ -416,6 +449,7 @@ const Engine = {
 
   async comments(input) {
     return serial(async () => {
+      const startedAt = Date.now();
       try {
         const args = parseArg(input);
         const url = String(args.url || '').trim();
@@ -425,12 +459,21 @@ const Engine = {
         else if (episodeId > 0) response = await getComment(`/comment/${episodeId}`, 'json', false, null, false);
         else return { success: false, comments: [] };
         const payload = await responseJson(response);
+        const comments = normalizedComments(payload);
+        resolverProgress('playbackComments', {
+          success: Boolean(response && response.ok !== false && payload && payload.success !== false),
+          rawCount: Array.isArray(payload && payload.comments) ? payload.comments.length : 0,
+          count: comments.length,
+          elapsedMs: Date.now() - startedAt,
+        });
         return {
           success: Boolean(response && response.ok !== false && payload && payload.success !== false),
-          comments: normalizedComments(payload, episodeId, url),
+          comments,
         };
       } catch (error) {
-        safeLog('warn', `comments failed (${safeErrorCode(error)})`);
+        const errorCode = safeErrorCode(error);
+        resolverProgress('playbackComments', { errorCode, elapsedMs: Date.now() - startedAt });
+        safeLog('warn', 'comments failed (' + errorCode + ') ' + JSON.stringify(safeErrorInfo(error)));
         return { success: false, comments: [] };
       }
     });
@@ -440,4 +483,4 @@ const Engine = {
 globalThis.OmniDanmakuEngine = Engine;
 
 // Export for the Node mock-host contract test; the Android bundle is still an IIFE.
-export { Engine as OmniDanmakuEngine };
+export { Engine as OmniDanmakuEngine, normalizedComments };

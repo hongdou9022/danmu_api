@@ -22,6 +22,10 @@ npm run test-android-danmaku
 
 ## 候选构建与发布
 
+Android 运行路径按设备约束处理：评论缓存最多保留最近两集的完整条目，单次 HTTP 响应去重缓存为最近16个响应，腾讯分片并发为8；Android 端采用既有20,000条输出上限。腾讯原始条目仅保留格式化会读取的字段，并及时释放中间数组；全部分片与评论仍参与原有处理，不更改选期、时间、颜色和顺序。字符串响应避免重复编码往返。旧 QuickJS 的原生 Base64 会截断 NUL，因此宿主适配层始终使用经过二进制回归的实现。
+
+构建器的 Android 专用变换会检查原入口是否仍符合预期；上游改变入口后应先修适配与回归，再发布候选，不能跳过检查直接更新稳定脚本。
+
 `Android danmaku engine` workflow 在 main push、PR 和上游同步后运行构建与测试并上传候选 artifact；`workflow_call` 仅构建指定 ref，不签名或更新正式版本。自动同步工作流使用这一入口，因为 GitHub 的 `GITHUB_TOKEN` push 不会自动触发另一条 push workflow。
 
 发布使用不可变 tag `android-<scriptVersion>`，或从 Actions 手动运行并填写一个新的 `script_version`。workflow 用仓库 Secret `DANMAKU_SIGNING_PRIVATE_KEY` 签署 manifest，将脚本与签名上传到该版本 Release，并更新 `android-stable` Release 中的 `manifest.json` 和 `manifest.sig` 指针。`stable` 是保留版本名。私钥不能提交到仓库或 APK；APK 仅包含验证签名所需的公钥。

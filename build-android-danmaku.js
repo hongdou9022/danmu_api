@@ -35,6 +35,12 @@ function androidCompatibilityPlugin() {
   const danAny = path.join(root, 'danmu_api/utils/dan-any.js');
   const codecUtil = path.join(root, 'danmu_api/utils/codec-util.js');
   const iqiyiSource = path.join(root, 'danmu_api/sources/iqiyi.js');
+  const tencentSource = path.join(root, 'danmu_api/sources/tencent.js');
+  const baseSource = path.join(root, 'danmu_api/sources/base.js');
+  const commonUtil = path.join(root, 'danmu_api/utils/common-util.js');
+  const dandanApi = path.join(root, 'danmu_api/apis/dandan-api.js');
+  const httpUtil = path.join(root, 'danmu_api/utils/http-util.js');
+  const logUtil = path.join(root, 'danmu_api/utils/log-util.js');
   const strictResolver = path.join(root, 'android/strict-resolver.js');
   return {
     name: 'android-danmaku-runtime',
@@ -87,6 +93,125 @@ function androidCompatibilityPlugin() {
         }
         contents = contents.replace(strictResolverHanRegexLiteral, () => `/${legacyPattern}/`);
         return { contents, loader: 'js', resolveDir: path.dirname(strictResolver) };
+      });
+      build.onLoad({ filter: /(?:^|[\\/])http-util\.js$/ }, async args => {
+        if (path.resolve(args.path) !== httpUtil) return;
+        let contents = await readFile(httpUtil, 'utf8');
+        const marker = 'return httpCacheContext.run(new Map(), fn);';
+        if (contents.split(marker).length !== 2) {
+          throw new Error('Could not locate the request-local HTTP cache factory for Android bounding.');
+        }
+        contents = `import { BoundedResponseCache } from '../../android/bounded-response-cache.js';\n${contents}`;
+        contents = contents.replace(marker, 'return httpCacheContext.run(new BoundedResponseCache(16), fn);');
+        return { contents, loader: 'js', resolveDir: path.dirname(httpUtil) };
+      });
+      build.onLoad({ filter: /(?:^|[\\/])log-util\.js$/ }, async args => {
+        if (path.resolve(args.path) !== logUtil) return;
+        let contents = await readFile(logUtil, 'utf8');
+        const marker = 'const jsonString = JSON.stringify(arg);';
+        if (contents.split(marker).length !== 2) {
+          throw new Error('Could not locate Error serialization for Android diagnostics.');
+        }
+        contents = `import { safeErrorInfo } from '../../android/safe-error-info.js';\n${contents}`;
+        contents = contents.replace(marker, 'const jsonString = JSON.stringify(arg instanceof Error ? safeErrorInfo(arg) : arg);');
+        return { contents, loader: 'js', resolveDir: path.dirname(logUtil) };
+      });
+      build.onLoad({ filter: /(?:^|[\\/])base\.js$/ }, async args => {
+        if (path.resolve(args.path) !== baseSource) return;
+        let contents = await readFile(baseSource, 'utf8');
+        const rawMarkers = [
+          'const raw = await this.getEpisodeDanmu(id);',
+          'const raw = await this.getEpisodeSegmentDanmu(segment);',
+        ];
+        for (const marker of rawMarkers) {
+          if (contents.split(marker).length !== 2) {
+            throw new Error(`Could not locate the expected BaseSource raw comments fetch: ${marker}`);
+          }
+          contents = contents.replace(marker, marker.replace('const raw', 'let raw'));
+        }
+        const formattedMarker = 'const formatted = this.formatComments(raw);';
+        if (contents.split(formattedMarker).length !== 3) {
+          throw new Error('Expected exactly two BaseSource formatted comment pipelines for Android memory release.');
+        }
+        contents = `import { releaseTencentRawComments } from '../../android/release-raw-comments.js';\nimport { logAndroidDanmakuCount } from '../../android/count-diagnostics.js';\n${contents}`;
+        let formattedPipeline = 0;
+        contents = contents.replaceAll(formattedMarker, () => {
+          formattedPipeline++;
+          return formattedPipeline === 1
+            ? `${formattedMarker}\n    logAndroidDanmakuCount('format', formatted.length);\n    releaseTencentRawComments(raw, formatted, sourceName);\n    raw = null;`
+            : `${formattedMarker}\n    logAndroidDanmakuCount('segment-format', formatted.length);\n    raw = null;`;
+        });
+        const rawCommentsMarker = 'let raw = await this.getEpisodeDanmu(id);';
+        const rawSegmentMarker = 'let raw = await this.getEpisodeSegmentDanmu(segment);';
+        if (contents.split(rawCommentsMarker).length !== 2 || contents.split(rawSegmentMarker).length !== 2) {
+          throw new Error('Could not locate both BaseSource raw comment fetches for Android count diagnostics.');
+        }
+        contents = contents.replace(rawCommentsMarker,
+          `${rawCommentsMarker}\n    logAndroidDanmakuCount('raw', Array.isArray(raw) ? raw.length : 0);`);
+        contents = contents.replace(rawSegmentMarker,
+          `${rawSegmentMarker}\n    logAndroidDanmakuCount('segment-raw', Array.isArray(raw) ? raw.length : 0);`);
+        const convertedCommentsMarker = 'return convertToDanmakuJson(formatted, sourceName);';
+        const convertedSegmentMarker = 'return convertToDanmakuJson(formatted, segment.type);';
+        if (contents.split(convertedCommentsMarker).length !== 2 || contents.split(convertedSegmentMarker).length !== 2) {
+          throw new Error('Could not locate both BaseSource conversion returns for Android count diagnostics.');
+        }
+        contents = contents.replace(convertedCommentsMarker,
+          'const converted = convertToDanmakuJson(formatted, sourceName);\n    logAndroidDanmakuCount("convert", Array.isArray(converted) ? converted.length : 0);\n    return converted;');
+        contents = contents.replace(convertedSegmentMarker,
+          'const converted = convertToDanmakuJson(formatted, segment.type);\n    logAndroidDanmakuCount("segment-convert", Array.isArray(converted) ? converted.length : 0);\n    return converted;');
+        return { contents, loader: 'js', resolveDir: path.dirname(baseSource) };
+      });
+      build.onLoad({ filter: /(?:^|[\\/])common-util\.js$/ }, async args => {
+        if (path.resolve(args.path) !== commonUtil) return;
+        let contents = await readFile(commonUtil, 'utf8');
+        const printHelper = /export function printFirst200Chars\(data\) \{[\s\S]*?\n\}/;
+        const matches = contents.match(printHelper) || [];
+        if (matches.length !== 1) {
+          throw new Error('Could not locate the common-util diagnostic printer for Android no-op replacement.');
+        }
+        contents = `import { printFirst200Chars as androidNoopPrintFirst200Chars } from '../../android/noop-print-first-200.js';\n${contents}`;
+        contents = contents.replace(printHelper, 'export const printFirst200Chars = androidNoopPrintFirst200Chars;');
+        return { contents, loader: 'js', resolveDir: path.dirname(commonUtil) };
+      });
+      build.onLoad({ filter: /(?:^|[\\/])dandan-api\.js$/ }, async args => {
+        if (path.resolve(args.path) !== dandanApi) return;
+        let contents = await readFile(dandanApi, 'utf8');
+        const functionStart = contents.indexOf('export async function getCommentByUrl(');
+        const functionEnd = contents.indexOf('\n// Extracted function for GET /api/v2/segmentcomment', functionStart);
+        if (functionStart < 0 || functionEnd < 0) {
+          throw new Error('Could not locate getCommentByUrl response formatting for Android count diagnostics.');
+        }
+        let functionContents = contents.slice(functionStart, functionEnd);
+        const returnMarker = 'return formatDanmuResponse(responseData, queryFormat);';
+        const returnIndex = functionContents.lastIndexOf(returnMarker);
+        const responseDataIndex = functionContents.lastIndexOf('const responseData = buildDanmuResponse', returnIndex);
+        if (returnIndex < 0 || responseDataIndex < 0
+          || !functionContents.slice(responseDataIndex, returnIndex).includes('count: danmus.length')) {
+          throw new Error('Could not locate the final getCommentByUrl response formatting for Android count diagnostics.');
+        }
+        const returnLineStart = functionContents.lastIndexOf('\n', returnIndex) + 1;
+        const indent = functionContents.slice(returnLineStart, returnIndex);
+        functionContents = functionContents.slice(0, returnLineStart)
+          + `${indent}logAndroidDanmakuCount('formatDanmuResponse', danmus.length);\n`
+          + functionContents.slice(returnLineStart);
+        contents = contents.slice(0, functionStart) + functionContents + contents.slice(functionEnd);
+        contents = `import { logAndroidDanmakuCount } from '../../android/count-diagnostics.js';\n${contents}`;
+        return { contents, loader: 'js', resolveDir: path.dirname(dandanApi) };
+      });
+      build.onLoad({ filter: /(?:^|[\\/])tencent\.js$/ }, async args => {
+        if (path.resolve(args.path) !== tencentSource) return;
+        let contents = await readFile(tencentSource, 'utf8');
+        const batchListMarker = 'return Array.isArray(data?.barrage_list) ? data.barrage_list : [];';
+        const segmentListMarker = 'contents.push(...parsedData.barrage_list);';
+        if (contents.split(batchListMarker).length !== 2 || contents.split(segmentListMarker).length !== 2) {
+          throw new Error('Could not locate both Tencent barrage list paths for Android payload compaction.');
+        }
+        contents = `import { compactTencentBarrageList } from '../../android/compact-tencent-comments.js';\n${contents}`;
+        contents = contents.replace(batchListMarker,
+          'return compactTencentBarrageList(Array.isArray(data?.barrage_list) ? data.barrage_list : []);');
+        contents = contents.replace(segmentListMarker,
+          'contents.push(...compactTencentBarrageList(parsedData.barrage_list));');
+        return { contents, loader: 'js', resolveDir: path.dirname(tencentSource) };
       });
       build.onLoad({ filter: /(?:^|[\\/])codec-util\.js$/ }, async args => {
         if (path.resolve(args.path) !== codecUtil) return;

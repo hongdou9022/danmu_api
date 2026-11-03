@@ -347,8 +347,25 @@
   globalThis.TextDecoder = RuntimeTextDecoder;
   globalThis.AbortController = globalThis.AbortController || HostAbortController;
   globalThis.structuredClone = globalThis.structuredClone || (value => value instanceof Uint8Array ? value.slice() : JSON.parse(JSON.stringify(value)));
-  globalThis.atob = globalThis.atob || (value => String.fromCharCode(...fromBase64(value)));
-  globalThis.btoa = globalThis.btoa || (value => toBase64(new Uint8Array(Array.from(String(value), c => c.charCodeAt(0) & 255))));
+  globalThis.atob = value => {
+    const bytes = fromBase64(value);
+    let output = '';
+    const chunkSize = 8192;
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+      output += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)));
+    }
+    return output;
+  };
+  globalThis.btoa = value => {
+    const text = String(value);
+    const bytes = new Uint8Array(text.length);
+    for (let i = 0; i < text.length; i++) {
+      const code = text.charCodeAt(i);
+      if (code > 255) throw new Error('Invalid character');
+      bytes[i] = code;
+    }
+    return toBase64(bytes);
+  };
   // http-util treats missing WebAssembly as legacy iOS and tries node-fetch.
   if (typeof globalThis.WebAssembly === 'undefined') globalThis.WebAssembly = {};
   // Node exposes crypto as a read-only global accessor, while QuickJS may not

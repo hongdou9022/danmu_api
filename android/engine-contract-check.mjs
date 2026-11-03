@@ -7,12 +7,22 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { TextDecoder as NodeTextDecoder } from 'node:util';
 import rewritePattern from 'regexpu-core';
+import { globals } from '../danmu_api/configs/globals.js';
+import { BoundedLruMap } from './bounded-comment-cache.js';
+import { BoundedResponseCache } from './bounded-response-cache.js';
 import { decodeVarintDecimal } from './protobuf-varint.js';
+import { safeErrorInfo } from './safe-error-info.js';
+import { releaseTencentRawComments } from './release-raw-comments.js';
+import { printFirst200Chars as androidNoopPrintFirst200Chars } from './noop-print-first-200.js';
+import { compactTencentBarrageList } from './compact-tencent-comments.js';
+import TencentSource from '../danmu_api/sources/tencent.js';
+import { logAndroidDanmakuCount } from './count-diagnostics.js';
 
 const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const data = new Map();
 let requestCount = 0;
 let decoderCallCount = 0;
+let hostLogCount = 0;
 
 globalThis.DanmakuHost = {
   request(id, url, optionsJson) {
@@ -36,11 +46,11 @@ globalThis.DanmakuHost = {
     decoderCallCount++;
     return new NodeTextDecoder(charset).decode(Buffer.from(value, 'base64'));
   },
-  log() {},
+  log() { hostLogCount++; },
   complete() {},
 };
 
-const { OmniDanmakuEngine } = await import('./engine-entry.js');
+const { OmniDanmakuEngine, normalizedComments } = await import('./engine-entry.js');
 
 test('engine metadata is pure, versioned, and reports the Android contract', async () => {
   const before = requestCount;
@@ -50,6 +60,9 @@ test('engine metadata is pure, versioned, and reports the Android contract', asy
   assert.equal(info.cacheSchema, 1);
   assert.ok(info.scriptVersion);
   assert.ok(info.capabilities.strictResolve);
+  assert.ok(globals.commentCache instanceof BoundedLruMap);
+  assert.equal(globals.commentCache.maxEntries, 2);
+  assert.equal(globals.tencentConcurrency, 8);
   assert.equal(requestCount, before);
 });
 
@@ -76,6 +89,17 @@ test('Android bundle manifest matches the emitted script bytes and stays within 
   assert.equal(manifest.sha256, createHash('sha256').update(engine).digest('hex'));
   assert.ok(manifest.size > 0 && manifest.size <= 8 * 1024 * 1024);
   assert.match(manifest.url, /^https:\/\/github\.com\/hongdou9022\/danmu_api\/releases\/download\/android-[^/]+\/engine\.js$/);
+  assert.equal(engine.includes(Buffer.from('[system] [common] Unsupported data type')), false);
+});
+
+test('Android printFirst200Chars no-op never serializes or logs comment bodies', () => {
+  let serialized = false;
+  const logsBefore = hostLogCount;
+  androidNoopPrintFirst200Chars({
+    toJSON() { serialized = true; throw new Error('comment body must not be serialized'); },
+  });
+  assert.equal(serialized, false);
+  assert.equal(hostLogCount, logsBefore);
 });
 
 test('built IIFE starts in a QuickJS-like context without Node or browser globals', async () => {
@@ -93,12 +117,37 @@ test('built IIFE starts in a QuickJS-like context without Node or browser global
       isolatedRequests++;
       isolatedRequestUrls.push(url);
       const options = JSON.parse(optionsJson);
-      const response = {
+      let response = {
         status: 200,
         headers: { 'content-type': 'application/json' },
         bodyText: JSON.stringify({ url, method: options.method }),
       };
-      if (url.endsWith('/native-json')) {
+      if (url.startsWith('https://v.qq.com/')) {
+        response.headers = { 'content-type': 'text/html; charset=utf-8' };
+        response.bodyText = '<html><title>Android test episode_腾讯视频</title></html>';
+      } else if (url.startsWith('https://dm.video.qq.com/barrage/base/')) {
+        response.headers = { 'content-type': 'application/json' };
+        response.bodyText = JSON.stringify({
+          segment_index: {
+            only: { segment_start: 0, segment_name: '1/60000' },
+          },
+        });
+      } else if (url.startsWith('https://dm.video.qq.com/barrage/segment/')) {
+        response.headers = { 'content-type': 'application/json' };
+        response.bodyText = JSON.stringify({
+          barrage_list: Array.from({ length: 53_200 }, (_, index) => ({
+            time_offset: index * 1000,
+            content: `tencent-${index}`,
+            content_style: index % 4 === 0
+              ? JSON.stringify({ gradient_colors: ['#FF0000'], position: 2 })
+              : index % 4 === 1 ? JSON.stringify({ color: '#00FF00', position: 3 }) : '',
+            up_count: '0',
+            avatar_url: `https://avatars.invalid/${index}`,
+            profile: { name: `user-${index}`, bio: 'unused metadata'.repeat(4) },
+            extension: { payload: 'ignored'.repeat(8) },
+          })),
+        });
+      } else if (url.endsWith('/native-json')) {
         response.bodyBase64 = Buffer.from(response.bodyText, 'utf8').toString('base64');
         delete response.bodyText;
       } else if (url.endsWith('/binary-response')) {
@@ -108,7 +157,9 @@ test('built IIFE starts in a QuickJS-like context without Node or browser global
       setTimeout(() => context.__dmHttpComplete(id, JSON.stringify(response)), 0);
     },
     abort() {},
-    timer(id, delay) { setTimeout(() => context.__dmTimerFire(id), delay); },
+    timer(id, delay) {
+      if (delay <= 1000) setTimeout(() => context.__dmTimerFire(id), delay);
+    },
     clearTimer() {},
     storageGet(key) { return isolatedData.has(key) ? isolatedData.get(key) : 'null'; },
     storageSet(key, value) { isolatedData.set(key, value); },
@@ -129,11 +180,24 @@ test('built IIFE starts in a QuickJS-like context without Node or browser global
     DanmakuHost: isolatedHost,
     // Match the current QuickJS host: setConsole exposes log only.
     console: { log: (...args) => nativeConsoleFallback.push(args.map(String).join(' ')) },
+    // The device's built-in Base64 globals corrupt binary strings containing NUL.
+    atob: () => 'broken-native-atob',
+    btoa: () => 'broken-native-btoa',
   });
   vm.runInContext(engine, context, { timeout: 5_000 });
   const info = await vm.runInContext('OmniDanmakuEngine.info()', context);
   assert.equal(info.apiVersion, 1);
   assert.equal(info.success, true);
+  assert.equal(isolatedRequests, 0);
+  const diagnosticInfo = await vm.runInContext('OmniDanmakuEngine.info({ diagnostics: true })', context);
+  assert.deepEqual(JSON.parse(JSON.stringify(diagnosticInfo.diagnostics)), {
+    ok: true,
+    arrayBufferByteLength: 6,
+    uint8ArrayLength: 6,
+    fixedBytes: [0, 1, 2, 255, 254, 255],
+    base64RoundTrip: [0, 1, 2, 255, 254, 255],
+    codecBase64Length: 6,
+  });
   assert.equal(isolatedRequests, 0);
   const response = await vm.runInContext("fetch('https://unit.invalid/probe').then(r => r.json())", context);
   assert.deepEqual(JSON.parse(JSON.stringify(response)), {
@@ -173,6 +237,20 @@ test('built IIFE starts in a QuickJS-like context without Node or browser global
     context,
   );
   assert.deepEqual(Array.from(new Uint8Array(binaryBuffer)), [0, 255, 17, 128]);
+
+  const commentsErrorLogStart = isolatedHostLogs.length;
+  const commentsErrorRequestStart = isolatedRequests;
+  const failedComments = await vm.runInContext(
+    "OmniDanmakuEngine.comments({ url: { toString() { throw new TypeError('failed https://secret.invalid/private?token=secret Authorization: Bearer abc'); } } })",
+    context,
+  );
+  assert.equal(failedComments.success, false);
+  assert.deepEqual(JSON.parse(JSON.stringify(failedComments.comments)), []);
+  assert.equal(isolatedRequests, commentsErrorRequestStart);
+  const commentsErrorLogs = isolatedHostLogs.slice(commentsErrorLogStart).map(entry => entry.message);
+  assert.ok(commentsErrorLogs.some(message => message.includes('comments failed (TypeError)')));
+  assert.ok(commentsErrorLogs.some(message => message.includes('TypeError') && message.includes('"stack":"')));
+  assert.equal(commentsErrorLogs.some(message => /secret\.invalid|token=secret|Bearer abc/.test(message)), false);
 
   const logStart = isolatedHostLogs.length;
   vm.runInContext("console.log('log'); console.info('info'); console.warn('warn'); console.error('error'); console.debug('debug')", context);
@@ -228,6 +306,37 @@ test('built IIFE starts in a QuickJS-like context without Node or browser global
   const gbkText = await vm.runInContext("new TextDecoder('gbk').decode(new Uint8Array([0xD6, 0xD0, 0xCE, 0xC4]))", context);
   assert.equal(gbkText, '中文');
   assert.equal(isolatedDecoderCalls, decoderStart + 3);
+
+  const tencentRequestStart = isolatedRequests;
+  const tencentLogStart = isolatedHostLogs.length;
+  const tencentComments = await vm.runInContext(
+    "OmniDanmakuEngine.comments({ url: 'https://v.qq.com/x/cover/android-test/episode123.html' })",
+    context,
+  );
+  assert.equal(tencentComments.success, true);
+  assert.equal(tencentComments.comments.length, 20_000);
+  assert.equal(tencentComments.comments[0].text, 'tencent-0');
+  assert.equal(tencentComments.comments[0].mode, 2);
+  assert.equal(tencentComments.comments[0].color, '#FF0000');
+  assert.equal(tencentComments.comments.at(-1).text, 'tencent-19999');
+  assert.equal(tencentComments.comments[1].time, 1);
+  assert.equal(tencentComments.comments[1].mode, 1);
+  assert.equal(tencentComments.comments[1].color, '#00FF00');
+  assert.equal(isolatedRequests - tencentRequestStart, 3);
+  const tencentProgress = isolatedHostLogs.slice(tencentLogStart)
+    .map(entry => entry.message)
+    .find(message => message.startsWith('resolve stage=playbackComments'));
+  assert.match(tencentProgress, /rawCount=53200/);
+  assert.match(tencentProgress, /count=20000/);
+  const tencentCountPhases = isolatedHostLogs.slice(tencentLogStart)
+    .map(entry => entry.message)
+    .filter(message => message.startsWith('danmaku-count phase='));
+  assert.deepEqual(tencentCountPhases.map(message => message.match(/phase=([A-Za-z-]+)/)[1]), [
+    'raw', 'format', 'convert', 'formatDanmuResponse',
+  ]);
+  assert.ok(tencentCountPhases.includes('danmaku-count phase=raw count=53200'));
+  assert.ok(tencentCountPhases.includes('danmaku-count phase=format count=53200'));
+  assert.equal(tencentCountPhases.some(message => message.includes('https://') || message.includes('tencent-0')), false);
 });
 
 test('GBK response decoding delegates bytes to the native charset host', () => {
@@ -252,6 +361,151 @@ test('protobuf varints retain little-endian digits and exact uint64 payloads', (
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x02,
   ), 0), /64 bits/);
   assert.throws(() => decodeVarintDecimal(Uint8Array.of(0x80, 0x80), 0), /incomplete/);
+});
+
+test('Android comment LRU retains complete entries and promotes hits', () => {
+  const cache = new BoundedLruMap(2);
+  const first = { comments: Array.from({ length: 7 }, (_, i) => ({ text: 'comment-' + i })), timestamp: 1 };
+  const second = { comments: [{ text: 'episode-2' }], timestamp: 2 };
+  const third = { comments: [{ text: 'episode-3' }], timestamp: 3 };
+  cache.set('episode-1', first).set('episode-2', second);
+  assert.strictEqual(cache.get('episode-1'), first);
+  cache.set('episode-3', third);
+  assert.deepEqual([...cache.keys()], ['episode-1', 'episode-3']);
+  assert.deepEqual(cache.get('episode-1'), first);
+  assert.equal(first.comments.length, 7);
+});
+
+test('Tencent raw response array can be released without changing formatted comments', () => {
+  const raw = Array.from({ length: 53_200 }, (_, index) => ({ p: index, m: `raw-${index}` }));
+  const formatted = raw.map(item => ({ time: item.p, text: item.m }));
+  const rawCountBeforeFormatting = raw.length;
+  const formattedCount = formatted.length;
+  assert.equal(rawCountBeforeFormatting, 53_200);
+  releaseTencentRawComments(raw, formatted, 'qq');
+  assert.equal(raw.length, 0);
+  assert.equal(formatted.length, formattedCount);
+  assert.equal(formatted.length, 53_200);
+  assert.deepEqual(formatted[0], { time: 0, text: 'raw-0' });
+  assert.deepEqual(formatted.at(-1), { time: 53_199, text: 'raw-53199' });
+});
+
+test('Tencent payload compaction preserves formatter output and all 53,200 comment fields', () => {
+  const source = new TencentSource();
+  const raw = [
+    {
+      time_offset: 1234,
+      content: 'gradient/top',
+      content_style: JSON.stringify({ gradient_colors: ['#12AB34'], position: 2 }),
+      up_count: '71',
+      avatar_url: 'https://avatar.invalid/user',
+      profile: { name: 'unused' },
+    },
+    {
+      time_offset: 5678,
+      content: 'solid/bottom',
+      content_style: JSON.stringify({ color: '#0099FF', position: 3 }),
+      up_count: '9',
+      extra: 'unused',
+    },
+    { time_offset: 9012, content: 'plain', content_style: '', up_count: '0', extension: [1, 2, 3] },
+  ];
+  const compact = compactTencentBarrageList(raw);
+  const previousNow = Date.now;
+  let originalFormatted;
+  let compactFormatted;
+  try {
+    Date.now = () => 1_700_000_000_000;
+    originalFormatted = source.formatComments(raw);
+    compactFormatted = source.formatComments(compact);
+  } finally {
+    Date.now = previousNow;
+  }
+  assert.deepEqual(compactFormatted, originalFormatted);
+  assert.deepEqual(Object.keys(compact[0]), ['time_offset', 'content', 'content_style', 'up_count']);
+
+  const large = Array.from({ length: 53_200 }, (_, index) => ({
+    time_offset: index * 1000,
+    content: `comment-${index}`,
+    content_style: index % 2 === 0 ? '{"position":2}' : '',
+    up_count: String(index % 100),
+    avatar_url: 'https://avatar.invalid/' + index,
+    profile: { id: index, biography: 'extra'.repeat(10) },
+  }));
+  const largeCompact = compactTencentBarrageList(large);
+  assert.equal(largeCompact.length, 53_200);
+  assert.deepEqual(largeCompact[0], {
+    time_offset: 0,
+    content: 'comment-0',
+    content_style: '{"position":2}',
+    up_count: '0',
+  });
+  assert.deepEqual(largeCompact.at(-1), {
+    time_offset: 53_199_000,
+    content: 'comment-53199',
+    content_style: '',
+    up_count: '99',
+  });
+  assert.equal(Object.hasOwn(largeCompact.at(-1), 'profile'), false);
+});
+
+test('Tencent raw response is preserved for non-Tencent or in-place formatting', () => {
+  const raw = [{ text: 'keep' }];
+  releaseTencentRawComments(raw, raw, 'qq');
+  assert.equal(raw.length, 1);
+  releaseTencentRawComments(raw, [], 'qiyi');
+  assert.equal(raw.length, 1);
+});
+
+test('Android count diagnostics emit only whitelisted phase and integer count', () => {
+  const before = hostLogCount;
+  logAndroidDanmakuCount('raw', 53_200);
+  logAndroidDanmakuCount('unknown', 42);
+  logAndroidDanmakuCount('format', -1);
+  assert.equal(hostLogCount, before + 1);
+});
+
+test('Android comment normalization returns at most the first 20,000 rows', () => {
+  const input = Array.from({ length: 20_005 }, (_, index) => ({
+    time: index,
+    text: 'row-' + index,
+  }));
+  const result = normalizedComments({ comments: input });
+  assert.equal(result.length, 20_000);
+  assert.deepEqual(result[0], {
+    time: 0,
+    text: 'row-0',
+    mode: 0,
+    color: '#FFFFFF',
+  });
+  assert.equal(result[19_999].text, 'row-19999');
+  assert.equal(input.length, 20_005);
+});
+
+test('Android HTTP cache LRU bounds cached copies without mutating caller data', () => {
+  const cache = new BoundedResponseCache(2);
+  const first = { data: [{ text: 'full response' }], status: 200, headers: { etag: 'a' } };
+  cache.set('a', first).set('b', { data: [{ text: 'b' }] });
+  assert.strictEqual(cache.get('a'), first);
+  cache.set('c', { data: [{ text: 'c' }] });
+  assert.deepEqual([...cache.keys()], ['a', 'c']);
+  assert.strictEqual(cache.get('a'), first);
+  assert.equal(first.data.length, 1);
+  assert.equal(cache.has('b'), false);
+});
+
+test('Android Error diagnostics redact URLs and credentials and limit stack output', () => {
+  const error = new Error('failed https://secret.invalid/path?token=secret Authorization: Bearer abc');
+  error.code = 'ECONNRESET';
+  error.stack = 'Error: failed https://secret.invalid/path?token=secret\n    at fetch (engine.js:1:2)\nprivate body';
+  const safe = safeErrorInfo(error);
+  assert.equal(safe.name, 'Error');
+  assert.equal(safe.code, 'ECONNRESET');
+  assert.equal(safe.message.includes('secret.invalid'), false);
+  assert.equal(safe.message.includes('abc'), false);
+  assert.equal(safe.stack.includes('secret.invalid'), false);
+  assert.equal(safe.stack.split(' | ').length, 2);
+  assert.deepEqual(safeErrorInfo(new Error('<html>private body</html>')).message, '[omitted]');
 });
 
 test('Android Han regex rewrite preserves supplementary Han, groups, and punctuation without u', () => {
