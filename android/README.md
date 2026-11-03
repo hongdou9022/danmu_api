@@ -26,8 +26,10 @@ Android 运行路径按设备约束处理：评论缓存最多保留最近两集
 
 构建器的 Android 专用变换会检查原入口是否仍符合预期；上游改变入口后应先修适配与回归，再发布候选，不能跳过检查直接更新稳定脚本。
 
-`Android danmaku engine` workflow 在 main push、PR 和上游同步后运行构建与测试并上传候选 artifact；`workflow_call` 仅构建指定 ref，不签名或更新正式版本。自动同步工作流使用这一入口，因为 GitHub 的 `GITHUB_TOKEN` push 不会自动触发另一条 push workflow。
+`Android danmaku engine` workflow 在 main push 和 PR 上运行候选构建及测试并上传 artifact。上游同步工作流会在合并有新提交后显式调用此 workflow，并传入本次合并的完整 commit SHA；正式发布调用会运行全量 `npm test` 和 Android 引擎/严格 resolver 测试，通过后用同一份已测试产物签名、创建不可变 Release 并更新 `android-stable`。GitHub 的 `GITHUB_TOKEN` push 不会自动触发另一条 push workflow，所以同步流程通过 `workflow_call` 显式完成构建和发布。Cloudflare 与 Vercel 仍由同步工作流原有的独立部署 job 处理。
 
-发布使用不可变 tag `android-<scriptVersion>`，或从 Actions 手动运行并填写一个新的 `script_version`。workflow 用仓库 Secret `DANMAKU_SIGNING_PRIVATE_KEY` 签署 manifest，将脚本与签名上传到该版本 Release，并更新 `android-stable` Release 中的 `manifest.json` 和 `manifest.sig` 指针。`stable` 是保留版本名。私钥不能提交到仓库或 APK；APK 仅包含验证签名所需的公钥。
+上游自动同步的版本号为 `sync-<Actions run id>-<run attempt>-<合并 SHA 前12位>`，确保重试时也生成新版本；只有成功合并新提交才自动发布。无上游更新时，`force_android_release` 手动输入可为当前 main 再运行完整构建、测试和发布；`force_deploy` 仍只强制部署服务器，不会发布 Android 引擎。独立的 `android-*` tag 和手动 `workflow_dispatch` 发布入口继续可用，手动发布需填写新的 `script_version`。`stable` 是保留版本名。
 
-稳定指针的两个 Release 资产由 GitHub 分次上传。短暂的更新窗口中若 manifest 和签名暂时不一致，客户端验签失败会保留当前脚本，下一次检查时重试。每个版本 Release 的 engine、manifest 和签名不覆盖旧版本。
+正式发布必须配置仓库 Secret `DANMAKU_SIGNING_PRIVATE_KEY`。workflow 先为目标 commit 构建未签名的最终版本产物，再运行全量项目测试和 Android 专项测试；通过后才将私钥交给独立的 Node 签名步骤，对被测 manifest 签名并立即用派生公钥验签，同时复核引擎哈希。发布 job 只下载并发布这份已测试的同一产物，不会再次构建。自动同步和手动正式发布仅接受 `refs/heads/main` 的可信调用；PR 不得签名发布，`android-*` 标签仍保留单独发布入口。任何构建、测试、签名校验或 artifact 复核失败都会阻止不可变 Release 与 `android-stable` 更新。私钥不能提交到仓库或 APK；APK 仅包含验证签名所需的公钥。
+
+稳定指针的两个 Release 资产由 GitHub 分次上传：先更新签名，再最后更新 manifest。短暂的更新窗口中若 manifest 和签名暂时不一致，客户端验签失败会保留当前脚本，下一次检查时重试。每个版本 Release 的 engine、manifest 和签名不覆盖旧版本；stable 发布 job 使用同一并发组串行执行，避免两个版本同时覆盖稳定指针。

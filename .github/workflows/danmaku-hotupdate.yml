@@ -4,9 +4,22 @@ on:
   workflow_call:
     inputs:
       candidate_ref:
-        description: Ref to build as a candidate after an upstream sync
+        description: Exact ref or commit SHA to build
         required: true
         type: string
+      publish_release:
+        description: Sign and publish the tested build, then update android-stable
+        required: false
+        type: boolean
+        default: false
+      script_version:
+        description: New immutable version required when publishing
+        required: false
+        type: string
+    secrets:
+      DANMAKU_SIGNING_PRIVATE_KEY:
+        description: RSA private key used to sign the Android manifest
+        required: false
   push:
     branches: [main]
     tags: ['android-*']
@@ -20,7 +33,7 @@ on:
         type: boolean
         default: false
       script_version:
-        description: Required when publishing manually, for example 20261103.1
+        description: Required for manual publishing, for example 20261103.1
         required: false
         type: string
 
@@ -30,80 +43,167 @@ permissions:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    outputs:
+      publish_release: ${{ steps.meta.outputs.publish_release }}
+      source_sha: ${{ steps.meta.outputs.source_sha }}
+      script_version: ${{ steps.meta.outputs.script_version }}
+      artifact_name: ${{ steps.meta.outputs.artifact_name }}
     steps:
       - uses: actions/checkout@v4
         with:
+          # Upstream sync callers pass the exact merge SHA; never resolve main here.
           ref: ${{ inputs.candidate_ref || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - run: npm install --no-audit --no-fund
-      - name: Set candidate version
-        id: candidate
+      - name: Resolve source and release version
+        id: meta
         shell: bash
-        run: echo "value=dev.$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          FULL_REF: ${{ github.ref }}
+          PUBLISH_REQUESTED: ${{ inputs.publish_release }}
+          INPUT_VERSION: ${{ inputs.script_version }}
+        run: |
+          set -euo pipefail
+          source_sha="$(git rev-parse HEAD)"
+          short_sha="${source_sha:0:12}"
+          is_release=false
+          version=""
+
+          if [[ "$EVENT_NAME" == "push" && "$FULL_REF" == refs/tags/android-* ]]; then
+            is_release=true
+            version="${REF_NAME#android-}"
+          elif [[ "$PUBLISH_REQUESTED" == "true" ]]; then
+            if [[ "$EVENT_NAME" == "pull_request" || "$FULL_REF" != "refs/heads/main" ]]; then
+              echo "Signed publishing is allowed only from the trusted main branch; pull requests are not publishable." >&2
+              exit 1
+            fi
+            is_release=true
+            version="$INPUT_VERSION"
+          fi
+
+          if [[ "$is_release" == "true" ]]; then
+            if [[ ! "$version" =~ ^[A-Za-z0-9._-]{1,64}$ || "$version" == "stable" ]]; then
+              echo "A new 1..64 character script_version is required; 'stable' is reserved." >&2
+              exit 1
+            fi
+          else
+            version="dev.${short_sha}"
+          fi
+
+          echo "publish_release=$is_release" >> "$GITHUB_OUTPUT"
+          echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
+          echo "script_version=$version" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=android-danmaku-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
       - name: Build Android engine
         run: npm run build-android-danmaku
         env:
-          DANMAKU_SCRIPT_VERSION: ${{ steps.candidate.outputs.value }}
+          DANMAKU_SCRIPT_VERSION: ${{ steps.meta.outputs.script_version }}
           DANMAKU_MIN_APP_VERSION: 1.0.20261103_0000
+      - name: Run full project tests
+        run: npm test
       - name: Verify Android engine and strict resolver
         run: npm run test-android-danmaku
+      - name: Sign and verify tested Android release manifest
+        if: ${{ steps.meta.outputs.publish_release == 'true' }}
+        env:
+          DANMAKU_SIGNING_PRIVATE_KEY: ${{ secrets.DANMAKU_SIGNING_PRIVATE_KEY }}
+          EXPECTED_VERSION: ${{ steps.meta.outputs.script_version }}
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { createHash, createPrivateKey, createPublicKey, sign, verify } from 'node:crypto';
+          import { readFile, writeFile } from 'node:fs/promises';
+
+          try {
+            const privateKeyText = process.env.DANMAKU_SIGNING_PRIVATE_KEY;
+            if (!privateKeyText) throw new Error('missing signing key');
+            const manifestBytes = await readFile('dist/android/manifest.json');
+            const manifest = JSON.parse(manifestBytes.toString('utf8'));
+            const engine = await readFile('dist/android/engine.js');
+            assert.equal(manifest.scriptVersion, process.env.EXPECTED_VERSION);
+            assert.equal(manifest.url, `https://github.com/hongdou9022/danmu_api/releases/download/android-${process.env.EXPECTED_VERSION}/engine.js`);
+            assert.equal(manifest.size, engine.length);
+            assert.equal(manifest.sha256, createHash('sha256').update(engine).digest('hex'));
+
+            const privateKey = createPrivateKey(privateKeyText);
+            const signature = sign('RSA-SHA256', manifestBytes, privateKey);
+            const publicKey = createPublicKey(privateKey);
+            assert.ok(verify('RSA-SHA256', manifestBytes, publicKey, signature));
+            await writeFile('dist/android/manifest.sig', `${signature.toString('base64')}\n`);
+
+            const writtenSignature = (await readFile('dist/android/manifest.sig', 'utf8')).trim();
+            const decodedSignature = Buffer.from(writtenSignature, 'base64');
+            assert.ok(decodedSignature.length > 0);
+            assert.equal(decodedSignature.toString('base64'), writtenSignature);
+            assert.ok(verify('RSA-SHA256', manifestBytes, publicKey, decodedSignature));
+          } catch {
+            console.error('Failed to sign or verify the tested Android manifest. Check the release signing key and artifact.');
+            process.exit(1);
+          }
+          NODE
       - uses: actions/upload-artifact@v4
         with:
-          name: android-danmaku-engine-${{ github.sha }}
+          name: ${{ steps.meta.outputs.artifact_name }}
           path: dist/android/
           if-no-files-found: error
           retention-days: 30
 
   publish:
-    if: >-
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/android-')) ||
-      (github.event_name == 'workflow_dispatch' && inputs.publish_release)
+    if: ${{ needs.build-and-test.outputs.publish_release == 'true' }}
     needs: build-and-test
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    concurrency:
+      group: android-stable-publish
+      cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
         with:
-          ref: ${{ github.ref }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-      - run: npm install --no-audit --no-fund
-      - name: Set release version
-        id: version
-        shell: bash
+          name: ${{ needs.build-and-test.outputs.artifact_name }}
+          path: dist/android
+      - name: Recheck tested release artifact
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          REF_NAME: ${{ github.ref_name }}
-          INPUT_VERSION: ${{ inputs.script_version }}
+          EXPECTED_VERSION: ${{ needs.build-and-test.outputs.script_version }}
+          EXPECTED_SOURCE_SHA: ${{ needs.build-and-test.outputs.source_sha }}
         run: |
-          if [[ "$EVENT_NAME" == "push" && "$REF_NAME" == android-* ]]; then
-            version="${REF_NAME#android-}"
-          else
-            version="$INPUT_VERSION"
-          fi
-          if [[ ! "$version" =~ ^[A-Za-z0-9._-]{1,64}$ ]]; then
-            echo "A valid script_version is required for manual publishing." >&2
-            exit 1
-          fi
-          echo "value=$version" >> "$GITHUB_OUTPUT"
-      - name: Build and sign engine manifest
-        run: npm run build-android-danmaku
-        env:
-          DANMAKU_SCRIPT_VERSION: ${{ steps.version.outputs.value }}
-          DANMAKU_MIN_APP_VERSION: 1.0.20261103_0000
-          DANMAKU_SIGNING_PRIVATE_KEY: ${{ secrets.DANMAKU_SIGNING_PRIVATE_KEY }}
-      - name: Publish immutable version and stable manifest
+          test -s dist/android/engine.js
+          test -s dist/android/manifest.json
+          test -s dist/android/manifest.sig
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { createHash } from 'node:crypto';
+          import { readFile } from 'node:fs/promises';
+
+          const manifest = JSON.parse(await readFile('dist/android/manifest.json', 'utf8'));
+          const engine = await readFile('dist/android/engine.js');
+          const signature = (await readFile('dist/android/manifest.sig', 'utf8')).trim();
+          const decodedSignature = Buffer.from(signature, 'base64');
+          assert.equal(manifest.scriptVersion, process.env.EXPECTED_VERSION);
+          assert.equal(manifest.url, `https://github.com/hongdou9022/danmu_api/releases/download/android-${process.env.EXPECTED_VERSION}/engine.js`);
+          assert.equal(manifest.size, engine.length);
+          assert.equal(manifest.sha256, createHash('sha256').update(engine).digest('hex'));
+          assert.ok(decodedSignature.length > 0);
+          assert.equal(decodedSignature.toString('base64'), signature);
+          assert.match(process.env.EXPECTED_SOURCE_SHA, /^[a-f0-9]{40}$/);
+          NODE
+      - name: Publish immutable version and update stable manifest
         env:
           GH_TOKEN: ${{ github.token }}
-          SCRIPT_VERSION: ${{ steps.version.outputs.value }}
+          GH_REPO: ${{ github.repository }}
+          SCRIPT_VERSION: ${{ needs.build-and-test.outputs.script_version }}
+          SOURCE_SHA: ${{ needs.build-and-test.outputs.source_sha }}
         run: |
           set -euo pipefail
           release_tag="android-${SCRIPT_VERSION}"
-          target_commit="$(git rev-parse HEAD)"
+          if [[ "$release_tag" == "android-stable" ]]; then
+            echo "android-stable is reserved for the mutable manifest pointer." >&2
+            exit 1
+          fi
           if gh release view "$release_tag" >/dev/null 2>&1; then
             echo "Release $release_tag already exists; versions are immutable." >&2
             exit 1
@@ -114,21 +214,34 @@ jobs:
             if [[ "$tag_type" == "tag" ]]; then
               tag_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/tags/${tag_sha}" --jq '.object.sha')"
             fi
-            if [[ "$tag_sha" != "$target_commit" ]]; then
+            if [[ "$tag_sha" != "$SOURCE_SHA" ]]; then
               echo "Existing tag $release_tag points to a different commit." >&2
               exit 1
             fi
           fi
+
           test -s dist/android/manifest.sig
           gh release create "$release_tag" \
             dist/android/engine.js dist/android/manifest.json dist/android/manifest.sig \
             --title "Android danmaku engine ${SCRIPT_VERSION}" \
-            --notes "Signed Android local danmaku engine. This release is immutable." \
-            --target "$target_commit" \
+            --notes "Signed Android local danmaku engine from ${SOURCE_SHA}. This version is immutable." \
+            --target "$SOURCE_SHA" \
             --latest=false
+
           if ! gh release view android-stable >/dev/null 2>&1; then
             gh release create android-stable --title "Android danmaku stable manifest" \
               --notes "Mutable pointer to the current compatible Android danmaku engine." \
+              --target "$SOURCE_SHA" \
               --latest=false
           fi
-          gh release upload android-stable dist/android/manifest.json dist/android/manifest.sig --clobber
+          # Change the signature first and manifest last. A partial update fails
+          # client verification safely; the new manifest becomes visible last.
+          gh release upload android-stable dist/android/manifest.sig --clobber
+          gh release upload android-stable dist/android/manifest.json --clobber
+          {
+            echo "### Android danmaku engine published"
+            echo "- Version: ${SCRIPT_VERSION}"
+            echo "- Source commit: ${SOURCE_SHA}"
+            echo "- Immutable release: ${release_tag}"
+            echo "- Stable manifest: updated"
+          } >> "$GITHUB_STEP_SUMMARY"
