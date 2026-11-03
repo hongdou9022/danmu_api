@@ -126,6 +126,16 @@ jobs:
         if: steps.merge.outputs.changed == 'true'
         run: git push origin HEAD:main
 
+  android-candidate:
+    name: Validate Android candidate after upstream sync
+    needs: sync
+    if: needs.sync.outputs.changed == 'true'
+    # GITHUB_TOKEN pushes do not trigger another push workflow. Build the merged
+    # main explicitly; this reusable event cannot publish the stable manifest.
+    uses: ./.github/workflows/danmaku-hotupdate.yml
+    with:
+      candidate_ref: main
+
   deploy:
     name: Deploy to Cloudflare
     needs: sync

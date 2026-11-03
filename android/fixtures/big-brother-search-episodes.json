@@ -1,0 +1,869 @@
+{
+  "query": "大哥小助理",
+  "source": "authenticated CloudTV SearchEpisodes proxy",
+  "httpStatus": 200,
+  "success": true,
+  "candidateCount": 2,
+  "candidates": [
+    {
+      "animeId": 5225593,
+      "animeTitle": "大哥小助理(2026)【综艺】from iqiyi",
+      "type": "综艺",
+      "year": null,
+      "season": null,
+      "episodeCount": 70,
+      "episodes": [
+        {
+          "episodeId": 12179,
+          "episodeTitle": "【qiyi】 第0集 第1期上 胡军李乃文懵圈助理0帧上岗 第1期上 胡军李乃文懵圈助理0帧上岗 瞿颖带硬汉拼豆编狗窝",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12180,
+          "episodeTitle": "【qiyi】 第0集 第1期下 胡军李乃文失误各罚500元 第1期下 胡军李乃文失误各罚500元？瞿颖变嘴替现场教做节目",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12181,
+          "episodeTitle": "【qiyi】 第0集 下班吃饭啦第1期 李乃文小助理太敬业 下班吃饭啦第1期 李乃文下班不忘规划次日行程 胡军传授健身经验",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12182,
+          "episodeTitle": "【qiyi】 第0集 第1期母带1 瞿颖带李乃文胡军打网球 第1期母带：瞿颖带李乃文胡军打网球  按摩放松胡军狂夸舒服",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12183,
+          "episodeTitle": "【qiyi】 第0集 第1期母带2 人老了做什么都心酸 第1期母带：胡军李乃文手工实力不详耐心极强 人老了做什么都心酸",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12184,
+          "episodeTitle": "【qiyi】 第0集 第1期母带3 李乃文话痨属性大爆发 第1期母带：李乃文话痨属性大爆发与小艺闲聊 胡军沉浸式记录片场",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12185,
+          "episodeTitle": "【qiyi】 第0集 第2期上 胡军李乃文弄丢佟丽娅裙子 第2期上 懵登助理再上线 胡军李乃文弄丢佟丽娅演出服",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12186,
+          "episodeTitle": "【qiyi】 第0集 第2期下 李乃文胡军用挂烫机烫假发 第2期下 李乃文胡军用挂烫机烫假发 佟丽娅送走心礼物",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12187,
+          "episodeTitle": "【qiyi】 第0集 下班吃饭啦第2期 李乃文带路胡军全程跑偏 下班吃饭啦第2期 胡军策划拍摄细节拿捏到位 李乃文带路全程跑偏",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12188,
+          "episodeTitle": "【qiyi】 第0集 第2期母带1 胡军李乃文神级配合笑翻了 第2期母带：胡军李乃文烫头发 态度一丝不苟技术一丝不通",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12189,
+          "episodeTitle": "【qiyi】 第0集 第2期母带2 胡军李乃文被下达KPI 第2期母带：胡军李乃文被下达KPI 总指挥佟丽娅统筹全局",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12190,
+          "episodeTitle": "【qiyi】 第0集 第2期母带3 李乃文手把手教娃背诗 第2期母带：李乃文手把手教娃背诗 主打一个鼓励式教育",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12191,
+          "episodeTitle": "【qiyi】 第0集 第2期母带4 胡军李乃文头花之争 第2期母带：胡军李乃文争夺头花选择权 审美PK各抒己见",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12192,
+          "episodeTitle": "【qiyi】 第0集 第3期上 胡军李乃文“威胁”陈丽君？ 第3期上 陈丽君妹系老板变反向助理 李乃文胡军老年人再就业？",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12193,
+          "episodeTitle": "【qiyi】 第0集 第3期下 胡军李乃文把陈丽君当女儿养 第3期下 老父亲既视感！ 胡军李乃文把陈丽君当女儿养",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12194,
+          "episodeTitle": "【qiyi】 第0集 下班吃饭啦第3期 胡军认证“老胡李”CP 下班吃饭啦第3期 李乃文碎碎念催睡陈丽君 胡军认证“老胡李”CP",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12195,
+          "episodeTitle": "【qiyi】 第0集 第3期母带1 李乃文喜提薛宝钗体验卡 第3期母带：李乃文喜提薛宝钗角色体验卡 陈丽君细节控打磨表演",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12196,
+          "episodeTitle": "【qiyi】 第0集 第3期母带2 胡军李乃文找饭店迷路 第3期母带：胡军李乃文找饭店迷路 前后鼻音难倒陈丽君",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12197,
+          "episodeTitle": "【qiyi】 第0集 第3期母带3 胡军李乃文陪伴型人格 第3期母带：胡军李乃文完全陪伴型人格 后台时刻待命超暖心",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12198,
+          "episodeTitle": "【qiyi】 第0集 第4期上 胡军李乃文欧豪组了把熟人局 第4期上 胡军李乃文欧豪组了把熟人局 五旬大哥客串门童即兴飙戏",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12199,
+          "episodeTitle": "【qiyi】 第0集 第4期下 胡军李乃文开讲职场哲学 第4期下 欧豪吐槽大哥拍照是黑料 胡军李乃文开讲职场生存哲学",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12200,
+          "episodeTitle": "【qiyi】 第0集 下班吃饭啦第4期 胡军李乃文获萌叔称号 下班吃饭啦第4期 欧豪吐槽李乃文拍照技术 胡军李乃文获萌叔称号",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12201,
+          "episodeTitle": "【qiyi】 第0集 第4期母带1 欧豪躺平式安排俩助理超满意 第4期母带：欧豪躺平式安排俩助理超满意 乃文回忆做拼豆满脸痛苦",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12202,
+          "episodeTitle": "【qiyi】 第0集 第4期母带2 胡军李乃文客串给老板挣外快 第4期母带：欧豪科普盘核桃细节 胡军李乃文客串给老板挣外快",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12203,
+          "episodeTitle": "【qiyi】 第0集 第4期母带3 老戏骨！李乃文胡军抠台词细节 第4期母带：老戏骨业务抗打！李乃文胡军抠台词细节对出一场戏",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12204,
+          "episodeTitle": "【qiyi】 第0集 第4期母带4 候场记录！李乃文让欧豪夸夸 第4期母带：李乃文在线让欧豪夸夸 胡军吹口哨炫技飙高音",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12205,
+          "episodeTitle": "【qiyi】 第0集 第5期上 李乃文胡军陪穆祉丞上表演课 第5期上 穆祉丞沉浸式上表演课 李乃文胡军陪练疯狂被考",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12206,
+          "episodeTitle": "【qiyi】 第0集 第5期下 胡军李乃文电玩城狂野飙车 第5期下 穆祉丞电玩城初体验 胡军李乃文跳舞机上驯服四肢",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12207,
+          "episodeTitle": "【qiyi】 第0集 下班吃饭啦第5期 乃文胡军录歌笑料百出 下班吃饭啦第5期 穆祉丞嗨赞重庆火锅 李乃文胡军录歌笑料百出",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12208,
+          "episodeTitle": "【qiyi】 第0集 第5期母带1 胡军李乃文定游玩方案 第5期母带：车内闲聊！胡军李乃文畅想带穆祉丞游玩",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12209,
+          "episodeTitle": "【qiyi】 第0集 第5期母带2 大哥陪穆祉丞吃火锅 第5期母带：胡军李乃文二人脑洞大开 打算带穆祉丞翘课去吃小龙虾",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12210,
+          "episodeTitle": "【qiyi】 第0集 第5期母带3 胡军李乃文助阵表演课 第5期母带：胡军李乃文助阵表演课 陪穆祉丞沉浸式练习表演",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12211,
+          "episodeTitle": "【qiyi】 第0集 第6期上 胡军李乃文谁也离不开谁 第6期上 胡军中暑李乃文独立上岗 黄圣依被密集行程震惊",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12212,
+          "episodeTitle": "【qiyi】 第0集 第6期下 胡军李乃文超绝下班精神状态 第6期下 黄圣依签售会胡军贴心服务 李乃文演打工人下班精神状态",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12213,
+          "episodeTitle": "【qiyi】 第0集 下班吃饭啦第6期 黄圣依带胡军李乃文蹭饭不花钱 下班吃饭啦第6期 黄圣依带胡军李乃文蹭饭不花钱 嗨吃服务区美食",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12214,
+          "episodeTitle": "【qiyi】 第0集 第6期母带1 胡军李乃文陪拍定妆照 第6期母带：陪拍定妆照 胡军李乃文夸赞黄圣依是成功女性",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12215,
+          "episodeTitle": "【qiyi】 第0集 第6期母带2 胡军李乃文车内闲聊 第6期母带：胡军李乃文车内闲聊 开启躺平按摩模式",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12216,
+          "episodeTitle": "【qiyi】 第0集 第6期母带3 大哥与小艺斗智斗勇 第6期母带：赶路途中欢乐多! 胡军李乃文和小艺斗智斗勇对话",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12217,
+          "episodeTitle": "【qiyi】 第0集 第6期母带4 黄圣依开会专业度Max 第6期母带：黄圣依开会专业度Max 李乃文沉浸式旁听",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12218,
+          "episodeTitle": "【qiyi】 第0集 第7期上 陈哲远被胡军李乃文宠上天 第7期上 陈哲远被胡军李乃文宠上天 大哥已读乱回喜提英文名",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12219,
+          "episodeTitle": "【qiyi】 第0集 第7期下 陈哲远控制胡军李乃文预算 第7期下 陈哲远鬼点子持续生成中 胡军李乃文精准控制吃饭预算",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12220,
+          "episodeTitle": "【qiyi】 第0集 下班吃饭啦第7期 李乃文吃辣看呆陈哲远 下班吃饭啦第7期 李乃文吃辣能力看呆陈哲远 胡军做菜狂加白糖",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12221,
+          "episodeTitle": "【qiyi】 第0集 第7期母带1 李乃文胡军当助理搭钱 第7期母带：李乃文胡军当助理甘愿自掏腰包 陈哲远聊玩密室胆小",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12222,
+          "episodeTitle": "【qiyi】 第0集 第7期母带2 陈哲远惦记西红柿炒蛋 第7期母带：陈哲远嘴馋惦记西红柿炒蛋 胡军坦言现阶段深耕话剧",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12223,
+          "episodeTitle": "【qiyi】 第0集 第7期母带3 李乃文分享转号被调侃 第7期母带：李乃文分享转手机号被调侃 胡军唠嗑横店萝卜饼美食",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12224,
+          "episodeTitle": "【qiyi】 第0集 第7期母带4 陈哲远李乃文聊演员成长感悟 第7期母带：下班干饭时刻 陈哲远李乃文聊演员成长感悟",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12225,
+          "episodeTitle": "【qiyi】 第0集 第8期上 向佐邀胡军李乃文套招 第8期上 李乃文胡军迷失在香港街头 向佐邀大哥现场套招",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12226,
+          "episodeTitle": "【qiyi】 第0集 第8期下 胡军李乃文给向佐直播刷礼物 第8期下 胡军李乃文沉浸式学直播 李乃文争做向佐榜一大哥",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12227,
+          "episodeTitle": "【qiyi】 第0集 下班吃饭啦第8期 向佐科普肠脑共通 下班吃饭啦第8期 向佐科普肠脑共通 李乃文寻找不存在的面馆",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12228,
+          "episodeTitle": "【qiyi】 第0集 第8期母带1 向佐胡军聊探班初识 第8期母带：向佐胡军聊探班初识 揭开向佐习武真实偏爱",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12229,
+          "episodeTitle": "【qiyi】 第0集 第8期母带2 胡军李乃文向佐干饭 胡军李乃文向佐干饭名场面 吃面闹出小乌龙",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12230,
+          "episodeTitle": "【qiyi】 第0集 第8期母带3 向佐分享粤语难点 第8期母带：向佐分享粤语难点 现场教学胡军李乃文",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12231,
+          "episodeTitle": "【qiyi】 第0集 第9期上 胡军李乃文为蒋诗萌选雷霆穿搭",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12232,
+          "episodeTitle": "【qiyi】 第0集 第9期下 胡军李乃文学跳男团舞 第9期下 大哥勇闯喜剧界！胡军李乃文陪蒋诗萌跳男团舞",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12233,
+          "episodeTitle": "【qiyi】 第0集 下班吃饭啦第9期 胡军李乃文变身葫芦娃 下班吃饭啦第9期 胡军李乃文变身葫芦娃兄弟 贴心乃助在线扒蒜",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12234,
+          "episodeTitle": "【qiyi】 第0集 第9期母带1 蒋诗萌人称补缝王 蒋诗萌人称补缝王 蒋龙谈笑料背后藏真情“呜”点",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12235,
+          "episodeTitle": "【qiyi】 第0集 第9期母带2 胡军打造复古造型 胡军为蒋诗萌打造复古造型 李乃文拍照主打量大",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12236,
+          "episodeTitle": "【qiyi】 第0集 第9期母带3 蒋诗萌安利预制生日照 蒋诗萌安利预制生日照 胡军严肃外表下竟是“女儿奴”",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12237,
+          "episodeTitle": "【qiyi】 第0集 第9期母带4 蒋诗萌剧本打磨现场 蒋诗萌喜剧剧本打磨现场 胡军李乃文沉浸式掌镜",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12238,
+          "episodeTitle": "【qiyi】 第0集 第10期上 胡军李乃文音乐节初体验 第10期上 胡军李乃文绑架式接机万妮达 大哥音乐节初体验",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12239,
+          "episodeTitle": "【qiyi】 第0集 第10期下 万妮达喂鹿胡军变夹子音 第10期下 万妮达喂鹿胡军变夹子音 李乃文扔火腿都砸自己人",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12240,
+          "episodeTitle": "【qiyi】 第0集 下班吃饭啦第10期 大哥们再现羁押万妮达 下班吃饭啦第10期 大哥们再现“羁押”万妮达 老绷家胡军也没绷住",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12241,
+          "episodeTitle": "【qiyi】 第0集 特辑 胡军李乃文的双标日常 特辑1：哥哥们的“双标”日常 胡军李乃文带女儿反差感拉满",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12242,
+          "episodeTitle": "【qiyi】 第0集 特辑 胡军李乃文越努力越搞笑 特辑2：胡军李乃文日常踩坑 “稀李胡涂”多努力场面就有多好笑",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12243,
+          "episodeTitle": "【qiyi】 第0集 第10期母带 万妮达偶遇胆大鹿 第10期母带：万妮达偶遇胆大鹿 李乃文投喂胡萝卜吐槽小鹿贪心",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12244,
+          "episodeTitle": "【qiyi】 第0集 陪看 李乃文胡军接力直播 胡军X李乃文一起聊《大哥小助理》，收官送福利！",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12245,
+          "episodeTitle": "【qiyi】 第0集 第10期母带 胡军李乃文暖心后勤 第10期母带：胡军李乃文暖心准备美食 超专业核对行程表",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12246,
+          "episodeTitle": "【qiyi】 第0集 第10期母带 胡军李乃文寻找美瞳 第10期母带：胡军李乃文寻找灰色美瞳 独属于大哥们的大海捞针",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12247,
+          "episodeTitle": "【qiyi】 第0集 第10期母带 李乃文嘱咐喂鹿贴士 第10期母带：李乃文贴心嘱咐喂鹿贴士 万妮达坦言会主动创造变动",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12248,
+          "episodeTitle": "【qiyi】 第0集 特别加更 胡军李乃文为老板颁奖 特别加更：杀青啦！胡军李乃文为各老板送荣誉 期待下一季再相见",
+          "date": null,
+          "seasonId": null
+        }
+      ]
+    },
+    {
+      "animeId": 294897,
+      "animeTitle": "大哥小助理(2026)【综艺】from 360",
+      "type": "综艺",
+      "year": null,
+      "season": null,
+      "episodeCount": 70,
+      "episodes": [
+        {
+          "episodeId": 12249,
+          "episodeTitle": "【qiyi】 第1期母带：李乃文话痨属性大爆发与小艺闲聊 胡军沉浸式记录片场 2026-08-20期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12250,
+          "episodeTitle": "【qiyi】 第1期母带：胡军李乃文手工实力不详耐心极强 人老了做什么都心酸 2026-08-19期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12251,
+          "episodeTitle": "【qiyi】 第1期母带：瞿颖带李乃文胡军打网球  按摩放松胡军狂夸舒服 2026-08-18期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12252,
+          "episodeTitle": "【qiyi】 下班吃饭啦第1期 李乃文下班不忘规划次日行程 胡军传授健身经验 2026-08-15期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12253,
+          "episodeTitle": "【qiyi】 第1期上 胡军李乃文懵圈助理0帧上岗 瞿颖带硬汉拼豆编狗窝 2026-08-14期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12254,
+          "episodeTitle": "【qiyi】 第1期下 胡军李乃文失误各罚500元？瞿颖变嘴替现场教做节目 2026-08-14期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12255,
+          "episodeTitle": "【qiyi】 第2期母带：胡军李乃文争夺头花选择权 审美PK各抒己见 2026-08-27期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12256,
+          "episodeTitle": "【qiyi】 第2期母带：李乃文手把手教娃背诗 主打一个鼓励式教育 2026-08-26期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12257,
+          "episodeTitle": "【qiyi】 第2期母带：胡军李乃文被下达KPI 总指挥佟丽娅统筹全局 2026-08-25期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12258,
+          "episodeTitle": "【qiyi】 第2期母带：胡军李乃文烫头发 态度一丝不苟技术一丝不通 2026-08-24期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12259,
+          "episodeTitle": "【qiyi】 下班吃饭啦第2期 胡军策划拍摄细节拿捏到位 李乃文带路全程跑偏 2026-08-22期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12260,
+          "episodeTitle": "【qiyi】 第2期上 懵登助理再上线 胡军李乃文弄丢佟丽娅演出服 2026-08-21期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12261,
+          "episodeTitle": "【qiyi】 第2期下 李乃文胡军用挂烫机烫假发 佟丽娅送走心礼物 2026-08-21期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12262,
+          "episodeTitle": "【qiyi】 第3期母带：胡军李乃文完全陪伴型人格 后台时刻待命超暖心 2026-09-02期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12263,
+          "episodeTitle": "【qiyi】 第3期母带：胡军李乃文找饭店迷路 前后鼻音难倒陈丽君 2026-09-01期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12264,
+          "episodeTitle": "【qiyi】 第3期母带：李乃文喜提薛宝钗角色体验卡 陈丽君细节控打磨表演 2026-08-31期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12265,
+          "episodeTitle": "【qiyi】 下班吃饭啦第3期 李乃文碎碎念催睡陈丽君 胡军认证“老胡李”CP 2026-08-29期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12266,
+          "episodeTitle": "【qiyi】 第3期上 陈丽君妹系老板变反向助理 李乃文胡军老年人再就业？ 2026-08-28期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12267,
+          "episodeTitle": "【qiyi】 第3期下 老父亲既视感！ 胡军李乃文把陈丽君当女儿养 2026-08-28期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12268,
+          "episodeTitle": "【qiyi】 第4期母带：李乃文在线让欧豪夸夸 胡军吹口哨炫技飙高音 2026-09-10期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12269,
+          "episodeTitle": "【qiyi】 第4期母带：老戏骨业务抗打！李乃文胡军抠台词细节对出一场戏 2026-09-09期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12270,
+          "episodeTitle": "【qiyi】 第4期母带：欧豪科普盘核桃细节 胡军李乃文客串给老板挣外快 2026-09-08期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12271,
+          "episodeTitle": "【qiyi】 第4期母带：欧豪躺平式安排俩助理超满意 乃文回忆做拼豆满脸痛苦 2026-09-07期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12272,
+          "episodeTitle": "【qiyi】 下班吃饭啦第4期 欧豪吐槽李乃文拍照技术 胡军李乃文获萌叔称号 2026-09-05期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12273,
+          "episodeTitle": "【qiyi】 第4期上 胡军李乃文欧豪组了把熟人局 五旬大哥客串门童即兴飙戏 2026-09-04期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12274,
+          "episodeTitle": "【qiyi】 第4期下 欧豪吐槽大哥拍照是黑料 胡军李乃文开讲职场生存哲学 2026-09-04期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12275,
+          "episodeTitle": "【qiyi】 第5期母带：胡军李乃文助阵表演课 陪穆祉丞沉浸式练习表演 2026-09-16期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12276,
+          "episodeTitle": "【qiyi】 第5期母带：胡军李乃文二人脑洞大开 打算带穆祉丞翘课去吃小龙虾 2026-09-15期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12277,
+          "episodeTitle": "【qiyi】 第5期母带：车内闲聊！胡军李乃文畅想带穆祉丞游玩 2026-09-14期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12278,
+          "episodeTitle": "【qiyi】 下班吃饭啦第5期 穆祉丞嗨赞重庆火锅 李乃文胡军录歌笑料百出 2026-09-12期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12279,
+          "episodeTitle": "【qiyi】 第5期上 穆祉丞沉浸式上表演课 李乃文胡军陪练疯狂被考 2026-09-11期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12280,
+          "episodeTitle": "【qiyi】 第5期下 穆祉丞电玩城初体验 胡军李乃文跳舞机上驯服四肢 2026-09-11期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12281,
+          "episodeTitle": "【qiyi】 第6期母带：黄圣依开会专业度Max 李乃文沉浸式旁听 2026-09-24期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12282,
+          "episodeTitle": "【qiyi】 第6期母带：赶路途中欢乐多! 胡军李乃文和小艺斗智斗勇对话 2026-09-23期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12283,
+          "episodeTitle": "【qiyi】 第6期母带：胡军李乃文车内闲聊 开启躺平按摩模式 2026-09-22期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12284,
+          "episodeTitle": "【qiyi】 第6期母带：陪拍定妆照 胡军李乃文夸赞黄圣依是成功女性 2026-09-21期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12285,
+          "episodeTitle": "【qiyi】 下班吃饭啦第6期 黄圣依带胡军李乃文蹭饭不花钱 嗨吃服务区美食 2026-09-19期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12286,
+          "episodeTitle": "【qiyi】 第6期上 胡军中暑李乃文独立上岗 黄圣依被密集行程震惊 2026-09-18期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12287,
+          "episodeTitle": "【qiyi】 第6期下 黄圣依签售会胡军贴心服务 李乃文演打工人下班精神状态 2026-09-18期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12288,
+          "episodeTitle": "【qiyi】 第7期母带：下班干饭时刻 陈哲远李乃文聊演员成长感悟 2026-10-01期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12289,
+          "episodeTitle": "【qiyi】 第7期母带：李乃文分享转手机号被调侃 胡军唠嗑横店萝卜饼美食 2026-09-30期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12290,
+          "episodeTitle": "【qiyi】 第7期母带：陈哲远嘴馋惦记西红柿炒蛋 胡军坦言现阶段深耕话剧 2026-09-29期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12291,
+          "episodeTitle": "【qiyi】 第7期母带：李乃文胡军当助理甘愿自掏腰包 陈哲远聊玩密室胆小 2026-09-28期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12292,
+          "episodeTitle": "【qiyi】 下班吃饭啦第7期 李乃文吃辣能力看呆陈哲远 胡军做菜狂加白糖 2026-09-26期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12293,
+          "episodeTitle": "【qiyi】 第7期上 陈哲远被胡军李乃文宠上天 大哥已读乱回喜提英文名 2026-09-25期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12294,
+          "episodeTitle": "【qiyi】 第7期下 陈哲远鬼点子持续生成中 胡军李乃文精准控制吃饭预算 2026-09-25期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12295,
+          "episodeTitle": "【qiyi】 第8期母带：向佐分享粤语难点 现场教学胡军李乃文 2026-10-07期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12296,
+          "episodeTitle": "【qiyi】 第8期母带：向佐胡军聊探班初识 揭开向佐习武真实偏爱 2026-10-05期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12297,
+          "episodeTitle": "【qiyi】 下班吃饭啦第8期 向佐科普肠脑共通 李乃文寻找不存在的面馆 2026-10-03期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12298,
+          "episodeTitle": "【qiyi】 第8期上 李乃文胡军迷失在香港街头 向佐邀大哥现场套招 2026-10-02期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12299,
+          "episodeTitle": "【qiyi】 第8期下 胡军李乃文沉浸式学直播 李乃文争做向佐榜一大哥 2026-10-02期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12300,
+          "episodeTitle": "【qiyi】 下班吃饭啦第9期 胡军李乃文变身葫芦娃兄弟 贴心乃助在线扒蒜 2026-10-10期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12301,
+          "episodeTitle": "【qiyi】 第9期上 胡军李乃文为蒋诗萌选雷霆穿搭 2026-10-09期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12302,
+          "episodeTitle": "【qiyi】 第9期下 大哥勇闯喜剧界！胡军李乃文陪蒋诗萌跳男团舞 2026-10-09期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12303,
+          "episodeTitle": "【qiyi】 第10期母带：李乃文贴心嘱咐喂鹿贴士 万妮达坦言会主动创造变动 2026-10-22期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12304,
+          "episodeTitle": "【qiyi】 第10期母带：胡军李乃文寻找灰色美瞳 独属于大哥们的大海捞针 2026-10-21期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12305,
+          "episodeTitle": "【qiyi】 第10期母带：胡军李乃文暖心准备美食 超专业核对行程表 2026-10-20期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12306,
+          "episodeTitle": "【qiyi】 第10期母带：万妮达偶遇胆大鹿 李乃文投喂胡萝卜吐槽小鹿贪心 2026-10-19期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12307,
+          "episodeTitle": "【qiyi】 下班吃饭啦第10期 大哥们再现“羁押”万妮达 老绷家胡军也没绷住 2026-10-17期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12308,
+          "episodeTitle": "【qiyi】 第10期上 胡军李乃文绑架式接机万妮达 大哥音乐节初体验 2026-10-16期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12309,
+          "episodeTitle": "【qiyi】 第10期下 万妮达喂鹿胡军变夹子音 李乃文扔火腿都砸自己人 2026-10-16期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12310,
+          "episodeTitle": "【qiyi】 胡军李乃文向佐干饭名场面 吃面闹出小乌龙 2026-10-06期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12311,
+          "episodeTitle": "【qiyi】 蒋诗萌人称补缝王 蒋龙谈笑料背后藏真情“呜”点 2026-10-12期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12312,
+          "episodeTitle": "【qiyi】 胡军为蒋诗萌打造复古造型 李乃文拍照主打量大 2026-10-13期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12313,
+          "episodeTitle": "【qiyi】 蒋诗萌安利预制生日照 胡军严肃外表下竟是“女儿奴” 2026-10-14期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12314,
+          "episodeTitle": "【qiyi】 蒋诗萌喜剧剧本打磨现场 胡军李乃文沉浸式掌镜 2026-10-15期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12315,
+          "episodeTitle": "【qiyi】 特辑2：胡军李乃文日常踩坑 “稀李胡涂”多努力场面就有多好笑 2026-10-18期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12316,
+          "episodeTitle": "【qiyi】 特辑1：哥哥们的“双标”日常 胡军李乃文带女儿反差感拉满 2026-10-18期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12317,
+          "episodeTitle": "【qiyi】 胡军X李乃文一起聊《大哥小助理》，收官送福利！ 2026-10-19期",
+          "date": null,
+          "seasonId": null
+        },
+        {
+          "episodeId": 12318,
+          "episodeTitle": "【qiyi】 特别加更：杀青啦！胡军李乃文为各老板送荣誉 期待下一季再相见 2026-10-23期",
+          "date": null,
+          "seasonId": null
+        }
+      ]
+    }
+  ]
+}
