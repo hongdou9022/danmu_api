@@ -4,6 +4,7 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import rewritePattern from 'regexpu-core';
+import { transformAndroidMiguDecrypt } from './android/migu-decrypt-transform.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.resolve(root, process.env.DANMAKU_ANDROID_OUTDIR || 'dist/android');
@@ -36,6 +37,7 @@ function androidCompatibilityPlugin() {
   const codecUtil = path.join(root, 'danmu_api/utils/codec-util.js');
   const iqiyiSource = path.join(root, 'danmu_api/sources/iqiyi.js');
   const tencentSource = path.join(root, 'danmu_api/sources/tencent.js');
+  const miguUtil = path.join(root, 'danmu_api/utils/migu-util.js');
   const baseSource = path.join(root, 'danmu_api/sources/base.js');
   const commonUtil = path.join(root, 'danmu_api/utils/common-util.js');
   const dandanApi = path.join(root, 'danmu_api/apis/dandan-api.js');
@@ -212,6 +214,11 @@ function androidCompatibilityPlugin() {
         contents = contents.replace(segmentListMarker,
           'contents.push(...compactTencentBarrageList(parsedData.barrage_list));');
         return { contents, loader: 'js', resolveDir: path.dirname(tencentSource) };
+      });
+      build.onLoad({ filter: /(?:^|[\\/])migu-util\.js$/ }, async args => {
+        if (path.resolve(args.path) !== miguUtil) return;
+        const contents = transformAndroidMiguDecrypt(await readFile(miguUtil, 'utf8'));
+        return { contents, loader: 'js', resolveDir: path.dirname(miguUtil) };
       });
       build.onLoad({ filter: /(?:^|[\\/])codec-util\.js$/ }, async args => {
         if (path.resolve(args.path) !== codecUtil) return;
@@ -424,6 +431,7 @@ async function main() {
 
   const manifest = {
     apiVersion,
+    nativeMiguDecode: true,
     scriptVersion,
     minAppVersion,
     cacheSchema,

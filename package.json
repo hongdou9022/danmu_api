@@ -10,7 +10,7 @@
     "build-forward-widget": "node build-forward-widget.js",
     "build-forward-widget:debug": "node build-forward-widget.js --debug",
     "build-android-danmaku": "node build-android-danmaku.js",
-    "test-android-danmaku": "node --test android/engine-contract-check.mjs android/strict-resolver.test.mjs"
+    "test-android-danmaku": "node --test android/engine-contract-check.mjs android/strict-resolver.test.mjs android/migu-decrypt-transform.test.mjs"
   },
   "author": "",
   "license": "ISC",
